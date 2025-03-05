@@ -25,11 +25,12 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Recommendation
+from tests.factories import RecommendationFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
-
+BASE_URL = "/recommendations"
 
 ######################################################################
 #  T E S T   C A S E S
@@ -73,3 +74,36 @@ class TestYourResourceService(TestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
     # Todo: Add your test cases here...
+
+    # ----------------------------------------------------------
+    # TEST CREATE
+    # ----------------------------------------------------------
+    def test_create_pet(self):
+        """It should Create a new Recommendation"""
+        test_rec = RecommendationFactory()
+        logging.debug("Test Recommendation: %s", test_rec.serialize())
+        response = self.client.post(BASE_URL, json=test_rec.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check the data is correct
+        new_rec = response.get_json()
+        self.assertEqual(new_rec["id"], new_rec.id)
+        self.assertEqual(new_rec["product_a_sku"], new_rec.product_a_sku)
+        self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
+        self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
+        self.assertEqual(new_rec["likes"], new_rec.likes)
+
+
+        # Check that the location header was correct
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_rec = response.get_json()
+        self.assertEqual(new_rec["id"], new_rec.id)
+        self.assertEqual(new_rec["product_a_sku"], new_rec.product_a_sku)
+        self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
+        self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
+        self.assertEqual(new_rec["likes"], new_rec.likes)
