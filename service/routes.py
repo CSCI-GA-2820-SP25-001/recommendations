@@ -96,3 +96,36 @@ def check_content_type(content_type) -> None:
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         f"Content-Type must be {content_type}",
     )
+######################################################################
+# UPDATE A RECOMMENDATION
+######################################################################
+    @api.doc("update_recommendations")
+    @api.response(404, "Recommendation with id was not found")
+    @api.response(400, "The Recommendation data was not valid")
+    @api.expect(create_model)
+    @api.marshal_with(recommendation_model)
+    def put(self, recommendation_id):
+        """
+        Updates a Recommendation
+
+        This endpoint will update a Recommendation based on the body that is passed
+        """
+        app.logger.info(
+            "Request to update recommendation with id: %s", recommendation_id
+        )
+        check_content_type("application/json")
+
+        recommendation = Recommendation.find(recommendation_id)
+        if not recommendation:
+            error(
+                status.HTTP_404_NOT_FOUND,
+                f"Recommendation with id '{recommendation_id}' was not found.",
+            )
+
+        data = api.payload
+        recommendation.deserialize(data)
+        recommendation.id = recommendation_id
+        recommendation.update()
+
+        app.logger.info("Recommendation with ID: %s updated.", recommendation.id)
+        return recommendation.serialize(), status.HTTP_200_OK
