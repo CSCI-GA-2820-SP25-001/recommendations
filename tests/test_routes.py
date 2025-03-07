@@ -107,3 +107,28 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
         self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
         self.assertEqual(new_rec["likes"], new_rec.likes)
+
+# ------------------------------------------------------------------
+    # RETRIEVE A RECOMMENDATION
+    # ------------------------------------------------------------------
+    @api.doc("get_recommendations")
+    @api.response(404, "Recommendation with id not found")
+    @api.marshal_with(recommendation_model)
+    def get(self, recommendation_id):
+        """
+        Retrieves a single Recommendation
+
+        This endpoint will return a Recommendation based on its id
+        """
+
+        app.logger.info("Request for recommendation with id: %s", recommendation_id)
+
+        recommendation = Recommendation.find(recommendation_id)
+        if not recommendation:
+            error(
+                status.HTTP_404_NOT_FOUND,
+                f"Recommendation with id '{recommendation_id}' was not found.",
+            )
+
+        app.logger.info("Returning recommendation: %s", recommendation_id)
+        return recommendation.serialize(), status.HTTP_200_OK
