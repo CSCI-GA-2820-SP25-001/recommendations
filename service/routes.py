@@ -38,9 +38,27 @@ def index():
         status.HTTP_200_OK,
     )
 
+    ######################################################################
+    #  R E S T   A P I   E N D P O I N T S
+    ######################################################################
 
-######################################################################
-#  R E S T   A P I   E N D P O I N T S
-######################################################################
+    @api.doc("delete_recommendations")
+    @api.response(204, "Recommendation deleted")
+    def delete(self, recommendation_id):
+        """
+        Deletes a Recommendation
 
-# Todo: Place your REST API code here ...
+        This endpoint will delete a Recommendation based the id specified in the path
+        """
+        app.logger.info(
+            "Request to delete recommendation with id: %s", recommendation_id
+        )
+
+        recommendation = Recommendation.find(recommendation_id)
+        if recommendation:
+            recommendation.delete()
+            app.logger.info(
+                "Recommendation with ID: %s was deleted.", recommendation_id
+            )
+
+        return "", status.HTTP_204_NO_CONTENT
