@@ -38,12 +38,39 @@ def index():
         status.HTTP_200_OK,
     )
 
-
 ######################################################################
 #  R E S T   A P I   E N D P O I N T S
 ######################################################################
-
 # Todo: Place your REST API code here ...
+
+
+
+######################################################################
+# DELETE A RECOMMENDATION
+######################################################################
+
+@api.doc("delete_recommendations")
+@api.response(204, "Recommendation deleted")
+def delete(self, recommendation_id):
+    """
+    Deletes a Recommendation
+
+    This endpoint will delete a Recommendation based the id specified in the path
+    """
+    app.logger.info(
+        "Request to delete recommendation with id: %s", recommendation_id
+    )
+
+    recommendation = Recommendation.find(recommendation_id)
+    if recommendation:
+        recommendation.delete()
+        app.logger.info(
+            "Recommendation with ID: %s was deleted.", recommendation_id
+        )
+    delete_recommendations
+    return "", status.HTTP_204_NO_CONTENT
+
+  
 
 ######################################################################
 # CREATE A NEW RECOMMENDATION
@@ -71,6 +98,42 @@ def create_recommendation():
     location_url = url_for("get_recommendations", pet_id=recommendation.id, _external=True)
     return jsonify(recommendation.serialize()), status.HTTP_201_CREATED, {"Location": location_url}
 
+
+  
+######################################################################
+# UPDATE A RECOMMENDATION
+######################################################################
+@api.doc("update_recommendations")
+@api.response(404, "Recommendation with id was not found")
+@api.response(400, "The Recommendation data was not valid")
+@api.expect(create_model)
+@api.marshal_with(recommendation_model)
+def put(self, recommendation_id):
+    """
+    Updates a Recommendation
+
+    This endpoint will update a Recommendation based on the body that is passed
+    """
+    app.logger.info(
+        "Request to update recommendation with id: %s", recommendation_id
+    )
+    check_content_type("application/json")
+
+    recommendation = Recommendation.find(recommendation_id)
+    if not recommendation:
+        error(
+            status.HTTP_404_NOT_FOUND,
+            f"Recommendation with id '{recommendation_id}' was not found.",
+        )
+
+    data = api.payload
+    recommendation.deserialize(data)
+    recommendation.id = recommendation_id
+    recommendation.update()
+
+    app.logger.info("Recommendation with ID: %s updated.", recommendation.id)
+    return recommendation.serialize(), status.HTTP_200_OK
+
 ######################################################################
 #  U T I L I T Y   F U N C T I O N S
 ######################################################################
@@ -96,36 +159,3 @@ def check_content_type(content_type) -> None:
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         f"Content-Type must be {content_type}",
     )
-######################################################################
-# UPDATE A RECOMMENDATION
-######################################################################
-    @api.doc("update_recommendations")
-    @api.response(404, "Recommendation with id was not found")
-    @api.response(400, "The Recommendation data was not valid")
-    @api.expect(create_model)
-    @api.marshal_with(recommendation_model)
-    def put(self, recommendation_id):
-        """
-        Updates a Recommendation
-
-        This endpoint will update a Recommendation based on the body that is passed
-        """
-        app.logger.info(
-            "Request to update recommendation with id: %s", recommendation_id
-        )
-        check_content_type("application/json")
-
-        recommendation = Recommendation.find(recommendation_id)
-        if not recommendation:
-            error(
-                status.HTTP_404_NOT_FOUND,
-                f"Recommendation with id '{recommendation_id}' was not found.",
-            )
-
-        data = api.payload
-        recommendation.deserialize(data)
-        recommendation.id = recommendation_id
-        recommendation.update()
-
-        app.logger.info("Recommendation with ID: %s updated.", recommendation.id)
-        return recommendation.serialize(), status.HTTP_200_OK
