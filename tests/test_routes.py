@@ -25,12 +25,12 @@ from unittest import TestCase
 from wsgi import app
 from service.common import status
 from service.models import db, Recommendation
-from .factories import AccountFactory
+from tests.factories import RecommendationFactory
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql+psycopg://postgres:postgres@localhost:5432/testdb"
 )
-
+BASE_URL = "/recommendations"
 
 ######################################################################
 #  T E S T   C A S E S
@@ -68,6 +68,7 @@ class TestYourResourceService(TestCase):
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
 
+
     def test_delete_recommendation(self):
         """It should Delete a Recommendation"""
         test_recommendation = self._create_recommendations(1)[0]
@@ -77,3 +78,62 @@ class TestYourResourceService(TestCase):
         # make sure they are deleted
         response = self.client.get(f"{BASE_URL}/{test_recommendation.id}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_index(self):
+        """It should call the home page"""
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    # Todo: Add your test cases here...
+
+    # ----------------------------------------------------------
+    # TEST CREATE
+    # ----------------------------------------------------------
+    def test_create_recommendation(self):
+        """It should Create a new Recommendation"""
+        test_rec = RecommendationFactory()
+        logging.debug("Test Recommendation: %s", test_rec.serialize())
+        response = self.client.post(BASE_URL, json=test_rec.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make sure location header is set
+        location = response.headers.get("Location", None)
+        self.assertIsNotNone(location)
+
+        # Check the data is correct
+        new_rec = response.get_json()
+        self.assertEqual(new_rec["id"], new_rec.id)
+        self.assertEqual(new_rec["product_a_sku"], new_rec.product_a_sku)
+        self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
+        self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
+        self.assertEqual(new_rec["likes"], new_rec.likes)
+
+
+        # Check that the location header was correct
+        response = self.client.get(location)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        new_rec = response.get_json()
+        self.assertEqual(new_rec["id"], new_rec.id)
+        self.assertEqual(new_rec["product_a_sku"], new_rec.product_a_sku)
+        self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
+        self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
+        self.assertEqual(new_rec["likes"], new_rec.likes)
+
+def test_update_recommendation(self):
+        """It should Update an existing Recommendation"""
+        # create a recommendation to update
+        test_recommendation = RecommendationFactory()
+        response = self.client.post(BASE_URL, json=test_recommendation.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # update the recommendation
+        new_recommendation = response.get_json()
+        logging.debug(new_recommendation)
+        new_recommendation["product_a_sku"] = "unknown"
+        response = self.client.put(
+            f"{BASE_URL}/{new_recommendation['id']}", json=new_recommendation
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_recommendation = response.get_json()
+        self.assertEqual(updated_recommendation["product_a_sku"], "unknown")
+
