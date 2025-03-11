@@ -68,23 +68,10 @@ class TestYourResourceService(TestCase):
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
 
-
-    def test_delete_recommendation(self):
-        """It should Delete a Recommendation"""
-        test_recommendation = self._create_recommendations(1)[0]
-        response = self.client.delete(f"{BASE_URL}/{test_recommendation.id}")
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertEqual(len(response.data), 0)
-        # make sure they are deleted
-        response = self.client.get(f"{BASE_URL}/{test_recommendation.id}")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
     def test_index(self):
         """It should call the home page"""
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-
-    # Todo: Add your test cases here...
 
     # ----------------------------------------------------------
     # TEST CREATE
@@ -119,7 +106,20 @@ class TestYourResourceService(TestCase):
         self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
         self.assertEqual(new_rec["likes"], new_rec.likes)
 
-def test_update_recommendation(self):
+    def test_get_recommendation(self):
+        """It should Get a single Recommendation"""
+        # get the id of a recommendation
+        test_recommendation = self._create_recommendations(1)[0]
+        response = self.client.get(f"{BASE_URL}/{test_recommendation.id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["product_a_sku"], test_recommendation.product_a_sku)
+        self.assertEqual(data["product_b_sku"], test_recommendation.product_b_sku)
+        self.assertEqual(
+            data["recommendation_type"], test_recommendation.recommendation_type.name
+        )
+
+    def test_update_recommendation(self):
         """It should Update an existing Recommendation"""
         # create a recommendation to update
         test_recommendation = RecommendationFactory()
@@ -136,4 +136,13 @@ def test_update_recommendation(self):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         updated_recommendation = response.get_json()
         self.assertEqual(updated_recommendation["product_a_sku"], "unknown")
-
+           
+    def test_delete_recommendation(self):
+        """It should Delete a Recommendation"""
+        test_recommendation = self._create_recommendations(1)[0]
+        response = self.client.delete(f"{BASE_URL}/{test_recommendation.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+        # make sure they are deleted
+        response = self.client.get(f"{BASE_URL}/{test_recommendation.id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
