@@ -62,7 +62,9 @@ class Recommendation(db.Model):
     name = db.column_property(product_a_sku + "-" + product_b_sku)
 
     def __repr__(self):
-        return f"<Recommendation {self.name} id=[{self.id}]>"
+        return (
+            f"<Recommendation {self.product_a_sku}-{self.product_b_sku} id=[{self.id}]>"
+        )
 
     def create(self):
         """
@@ -83,6 +85,8 @@ class Recommendation(db.Model):
         Updates a Recommendation to the database
         """
         logger.info("Saving %s", self.name)
+        if not self.id:
+            raise DataValidationError("Update called with empty ID field")
         try:
             db.session.commit()
         except Exception as e:
@@ -173,7 +177,9 @@ class Recommendation(db.Model):
     @staticmethod
     def _validate_sku(value, field_name):
         """Ensures SKU values are within the character limit."""
-        if not value or len(value) > 25:
+        if value is None:
+            raise DataValidationError(f"{field_name} is required and cannot be empty")
+        if not isinstance(value, str) or len(value) > 25:
             raise TextColumnLimitExceededError(f"{field_name} exceeds limit")
         return value
 
