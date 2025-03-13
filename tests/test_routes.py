@@ -32,12 +32,13 @@ DATABASE_URI = os.getenv(
 )
 BASE_URL = "/recommendations"
 
+
 ######################################################################
 #  T E S T   C A S E S
 ######################################################################
 # pylint: disable=too-many-public-methods
-class TestYourResourceService(TestCase):
-    """REST API Server Tests"""
+class TestRecommendationService(TestCase):
+    """Recommendation Server Tests"""
 
     @classmethod
     def setUpClass(cls):
@@ -64,6 +65,25 @@ class TestYourResourceService(TestCase):
         """This runs after each test"""
         db.session.remove()
 
+    ############################################################
+    # Utility function to bulk create pets
+    ############################################################
+    def _create_recommendations(self, count):
+        """Factory method to create recommendations in bulk"""
+        recommendations = []
+        for _ in range(count):
+            test_recommendation = RecommendationFactory()
+            response = self.client.post(BASE_URL, json=test_recommendation.serialize())
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_201_CREATED,
+                "Could not create test recommendation",
+            )
+            new_recommendation = response.get_json()
+            test_recommendation.id = new_recommendation["id"]
+            recommendations.append(test_recommendation)
+        return recommendations
+
     ######################################################################
     #  P L A C E   T E S T   C A S E S   H E R E
     ######################################################################
@@ -72,6 +92,19 @@ class TestYourResourceService(TestCase):
         """It should call the home page"""
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(data["name"], "Recommendation Demo REST API Service")
+
+    # ----------------------------------------------------------
+    # TEST LIST
+    # ----------------------------------------------------------
+    def test_get_recommendation_list(self):
+        """It should Get a list of Recommendations"""
+        self._create_recommendations(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
 
     # ----------------------------------------------------------
     # TEST CREATE
@@ -89,23 +122,40 @@ class TestYourResourceService(TestCase):
 
         # Check the data is correct
         new_rec = response.get_json()
-        self.assertEqual(new_rec["id"], new_rec.id)
-        self.assertEqual(new_rec["product_a_sku"], new_rec.product_a_sku)
-        self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
-        self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
-        self.assertEqual(new_rec["likes"], new_rec.likes)
-
+        self.assertIsInstance(new_rec["id"], int)
+        self.assertEqual(new_rec["product_a_sku"], test_rec.product_a_sku)
+        self.assertEqual(new_rec["product_b_sku"], test_rec.product_b_sku)
+        self.assertEqual(
+            new_rec["recommendation_type"], test_rec.recommendation_type.name
+        )
+        self.assertEqual(new_rec["likes"], test_rec.likes)
 
         # Check that the location header was correct
         response = self.client.get(location)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        new_rec = response.get_json()
-        self.assertEqual(new_rec["id"], new_rec.id)
-        self.assertEqual(new_rec["product_a_sku"], new_rec.product_a_sku)
-        self.assertEqual(new_rec["product_b_sku"], new_rec.product_b_sku)
-        self.assertEqual(new_rec["recommendation_type"], new_rec.recommendation_type)
-        self.assertEqual(new_rec["likes"], new_rec.likes)
+        new_rec_data = response.get_json()
+        self.assertEqual(new_rec_data["product_a_sku"], test_rec.product_a_sku)
+        self.assertEqual(new_rec_data["product_b_sku"], test_rec.product_b_sku)
+        self.assertEqual(
+            new_rec_data["recommendation_type"], test_rec.recommendation_type.name
+        )
+        self.assertEqual(new_rec_data["likes"], test_rec.likes)
 
+    def test_create_recommendation_duplicate(self):
+        """It should not create a duplicate Recommendation"""
+        recommendation_data = RecommendationFactory().serialize()
+        # Create the first recommendation, which should succeed
+        response = self.client.post(BASE_URL, json=recommendation_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Attempt to create a duplicate recommendation, which should fail
+        response = self.client.post(BASE_URL, json=recommendation_data)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("Recommendation already exists", response.get_json()["message"])
+
+    # ----------------------------------------------------------
+    # TEST READ
+    # ----------------------------------------------------------
     def test_get_recommendation(self):
         """It should Get a single Recommendation"""
         # get the id of a recommendation
@@ -119,6 +169,17 @@ class TestYourResourceService(TestCase):
             data["recommendation_type"], test_recommendation.recommendation_type.name
         )
 
+    def test_get_recommendation_not_found(self):
+        """It should not Get a Recommendation thats not found"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        logging.debug("Response data = %s", data)
+        self.assertIn("was not found", data["message"])
+
+    # ----------------------------------------------------------
+    # TEST UPDATE
+    # ----------------------------------------------------------
     def test_update_recommendation(self):
         """It should Update an existing Recommendation"""
         # create a recommendation to update
@@ -136,7 +197,10 @@ class TestYourResourceService(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         updated_recommendation = response.get_json()
         self.assertEqual(updated_recommendation["product_a_sku"], "unknown")
-           
+
+    # ----------------------------------------------------------
+    # TEST DELETE
+    # ----------------------------------------------------------
     def test_delete_recommendation(self):
         """It should Delete a Recommendation"""
         test_recommendation = self._create_recommendations(1)[0]
@@ -146,3 +210,68 @@ class TestYourResourceService(TestCase):
         # make sure they are deleted
         response = self.client.get(f"{BASE_URL}/{test_recommendation.id}")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_non_existing_recommendation(self):
+        """It should Delete a recommendation even if it doesn't exist"""
+        response = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+
+    def test_data_validation_error(self):
+        """It should not create recommendation if giving invalid data"""
+        # test missing field
+        invalid_data = {
+            "product_a_sku": "123",
+            "product_b_sku": None,
+            "recommendation_type": "UP_SELL",
+        }
+        response = self.client.post(BASE_URL, json=invalid_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.get_json())
+        self.assertEqual(response.get_json()["error"], "Bad Request")
+
+        # test invalid recommendation_type
+        invalid_data = {
+            "product_a_sku": "123",
+            "product_b_sku": "123",
+            "recommendation_type": "InvalidType",
+        }
+        response = self.client.post(BASE_URL, json=invalid_data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.get_json())
+        self.assertEqual(response.get_json()["error"], "Bad Request")
+        self.assertIn(
+            "Invalid value for RecommendationType: InvalidType",
+            response.get_json()["message"],
+        )
+
+
+######################################################################
+#  T E S T   S A D   P A T H S
+######################################################################
+class TestSadPaths(TestCase):
+    """Test REST Exception Handling"""
+
+    def setUp(self):
+        """Runs before each test"""
+        self.client = app.test_client()
+
+    def test_method_not_allowed(self):
+        """It should not allow update without a Recommendation id"""
+        response = self.client.put(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_create_recommendation_no_data(self):
+        """It should not Create a Recommendation with missing data"""
+        response = self.client.post(BASE_URL, json={})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_recommendation_no_content_type(self):
+        """It should not Create a Recommendation with no content type"""
+        response = self.client.post(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+    def test_create_recommendation_wrong_content_type(self):
+        """It should not Create a Recommendation with the wrong content type"""
+        response = self.client.post(BASE_URL, data="hello", content_type="text/html")
+        self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
