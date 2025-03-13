@@ -92,8 +92,19 @@ class TestRecommendationService(TestCase):
         """It should call the home page"""
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        data = resp.get_json()
-        self.assertEqual(data["name"], "Recommendation Demo REST API Service")
+        self.assertIn("name", resp.json)
+        self.assertIn("version", resp.json)
+        self.assertIn("paths", resp.json)
+        self.assertEqual(
+            len(list(resp.json["paths"])),
+            len(
+                list(
+                    filter(
+                        lambda rule: rule.endpoint != "static", app.url_map.iter_rules()
+                    )
+                )
+            ),
+        )
 
     # ----------------------------------------------------------
     # TEST LIST

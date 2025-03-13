@@ -36,9 +36,19 @@ def index():
     app.logger.info("Request for Root URL")
     return (
         jsonify(
-            name="Recommendation Demo REST API Service",
+            name="Recommendations REST API Service",
             version="1.0",
-            paths=url_for("list_recommendations", _external=True),
+            paths=[
+                (
+                    {
+                        "path": str(rule),
+                        "methods": list(rule.methods),
+                        "description": globals()[rule.endpoint].__doc__,
+                    }
+                )
+                for rule in app.url_map.iter_rules()
+                if rule.endpoint != "static"
+            ],
         ),
         status.HTTP_200_OK,
     )
