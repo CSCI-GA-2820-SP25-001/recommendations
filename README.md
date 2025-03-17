@@ -1,37 +1,29 @@
-# NYU DevOps Project Template
-
+# NYU DevOps SP25 Project -- Recommendations Squad
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/Language-Python-blue.svg)](https://python.org/)
 
-This is a skeleton you can use to start your projects.
+Based on [NYU DevOps Project Template](github.com/nyu-devops/project-template)
 
-**Note:** _Feel free to overwrite this `README.md` file with the one that describes your project._
 
 ## Overview
 
-This project template contains starter code for your class project. The `/service` folder contains your `models.py` file for your model and a `routes.py` file for your service. The `/tests` folder has test case starter code for testing the model and the service separately. All you need to do is add your functionality. You can use the [lab-flask-tdd](https://github.com/nyu-devops/lab-flask-tdd) for code examples to copy from.
+ This repo belongs to the Recommendations Squad who is responsible for managing relationships between two products.
 
-## Automatic Setup
-
-The best way to use this repo is to start your own repo using it as a git template. To do this just press the green **Use this template** button in GitHub and this will become the source for your repository.
+ The `/service` folder contains our `models.py` file for our model and a `routes.py` file for our service. The `/tests` folder has test cases for testing the model and the service separately.
 
 ## Manual Setup
 
-You can also clone this repository and then copy and paste the starter code into your project repo folder on your local computer. Be careful not to copy over your own `README.md` file so be selective in what you copy.
+You can clone this repository into your a folder on your local computer.
+You can use the following command:
 
-There are 4 hidden files that you will need to copy manually if you use the Mac Finder or Windows Explorer to copy files from this folder into your repo folder.
-
-These should be copied using a bash shell as follows:
-
-```bash
-    cp .gitignore  ../<your_repo_folder>/
-    cp .flaskenv ../<your_repo_folder>/
-    cp .gitattributes ../<your_repo_folder>/
 ```
+git clone https://github.com/CSCI-GA-2820-SP25-001/recommendations.git
+```
+
 
 ## Contents
 
-The project contains the following:
+This repository contains the following:
 
 ```text
 .gitignore          - this will ignore vagrant and other metadata files
@@ -58,6 +50,38 @@ tests/                     - test cases package
 ├── test_cli_commands.py   - test suite for the CLI
 ├── test_models.py         - test suite for business models
 └── test_routes.py         - test suite for service routes
+```
+
+## Database Table Schema
+
+| Column | Description |
+| ------ | ----------- |
+| id | Integer, serves as the primary key |
+| product_a_sku |  String with no more than 25 characters, can not be null, represents product a |
+| product_b_sku |  String with no more than 25 characters, can not be null, represents product b |
+| type | one of {"UP_SELL", "CROSS_SELL", "ACCESSORY", "BUNDLE"}, denotes the relationship between product a and product b |
+
+### Example Object
+
+```Python
+{'id': 1033, 'product_a_sku': 'uRfNZyNY', 'product_b_sku': 'svLLqnLF', 'type': 'ACCESSORY'}
+```
+
+### Testing
+Use either of the following commands to test the code:
+
+```
+make test
+```
+or 
+```
+pytest
+```
+
+Use the following command to run on Local Host: 
+
+```
+make run
 ```
 
 ## License
