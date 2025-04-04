@@ -171,7 +171,22 @@ def list_recommendations():
     app.logger.info("Request for recommendation list")
 
     recommendations = []
-    recommendations = Recommendation.all()
+    # See if any query filters were passed in
+    a_sku = request.args.get("product_a_sku")
+    recommendation_type = request.args.get("recommendation_type")
+
+    if a_sku and recommendation_type:
+        type_value = getattr(RecommendationType, recommendation_type.upper())
+        recommendations = Recommendation.find_by_product_a_sku_and_type(
+            a_sku, type_value
+        )
+    elif a_sku:
+        recommendations = Recommendation.find_by_product_a_sku(a_sku)
+    elif recommendation_type:
+        type_value = getattr(RecommendationType, recommendation_type.upper())
+        recommendations = Recommendation.find_by_type(type_value)
+    else:
+        recommendations = Recommendation.all()
     results = [recommendation.serialize() for recommendation in recommendations]
     app.logger.info("Returning %d recommendations", len(results))
     return jsonify(results), status.HTTP_200_OK

@@ -22,9 +22,10 @@ TestRecommendation API Service Test Suite
 import os
 import logging
 from unittest import TestCase
+from urllib.parse import quote_plus
 from wsgi import app
 from service.common import status
-from service.models import db, Recommendation
+from service.models import db, Recommendation, RecommendationType
 from tests.factories import RecommendationFactory
 
 DATABASE_URI = os.getenv(
@@ -255,6 +256,69 @@ class TestRecommendationService(TestCase):
             "Invalid value for RecommendationType: InvalidType",
             response.get_json()["message"],
         )
+
+    def test_query_by_product_a_sku(self):
+        """It should Query Recommendations by product_a_sku"""
+        recommendations = self._create_recommendations(5)
+        test_a_sku = recommendations[0].product_a_sku
+        product_a_sku_count = len(
+            [
+                recommendation
+                for recommendation in recommendations
+                if recommendation.product_a_sku == test_a_sku
+            ]
+        )
+        response = self.client.get(
+            BASE_URL, query_string=f"product_a_sku={quote_plus(test_a_sku)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), product_a_sku_count)
+        # check the data just to be sure
+        for recommendation in data:
+            self.assertEqual(recommendation["product_a_sku"], test_a_sku)
+
+    def test_query_recommendation_list_by_recommendation_type(self):
+        """It should Query Recommendations by recommendation_type"""
+        recommendations = self._create_recommendations(10)
+        test_type = RecommendationType.BUNDLE
+        type_recommendations = [
+            recommendation
+            for recommendation in recommendations
+            if recommendation.recommendation_type == test_type
+        ]
+        response = self.client.get(BASE_URL, query_string="recommendation_type=bundle")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), len(type_recommendations))
+        # check the data just to be sure
+        for recommendation in data:
+            self.assertEqual(recommendation["recommendation_type"], test_type.name)
+
+    def test_query_by_product_a_sku_and_recommendation_type(self):
+        """It should Query Recommendations by product_a_sku and recommendation_type"""
+        recommendations = self._create_recommendations(10)
+        test_a_sku = recommendations[0].product_a_sku
+        test_type = RecommendationType.BUNDLE
+        product_a_sku_count = len(
+            [
+                recommendation
+                for recommendation in recommendations
+                if recommendation.product_a_sku == test_a_sku
+                and recommendation.recommendation_type == test_type
+            ]
+        )
+        response = self.client.get(
+            BASE_URL,
+            query_string=f"product_a_sku={quote_plus(test_a_sku)}&recommendation_type=bundle",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), product_a_sku_count)
+        # check the data just to be sure
+        for recommendation in data:
+            self.assertEqual(recommendation["product_a_sku"], test_a_sku)
+            self.assertEqual(recommendation["recommendation_type"], test_type.name)
 
 
 ######################################################################
