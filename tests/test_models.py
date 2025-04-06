@@ -292,6 +292,44 @@ class TestPetModel(TestCaseBase):
         recommendation = Recommendation()
         self.assertRaises(DataValidationError, recommendation.deserialize, data)
 
+    def test_find_by_product_a_sku_and_type(self):
+        """It should filter recommendations by product_a_sku and type and return them ordered by likes"""
+        Recommendation(
+            product_a_sku="SKU1",
+            product_b_sku="SKU2",
+            recommendation_type=RecommendationType.UP_SELL,
+            likes=10,
+        ).create()
+        Recommendation(
+            product_a_sku="SKU1",
+            product_b_sku="SKU3",
+            recommendation_type=RecommendationType.UP_SELL,
+            likes=20,
+        ).create()
+        Recommendation(
+            product_a_sku="SKU1",
+            product_b_sku="SKU4",
+            recommendation_type=RecommendationType.CROSS_SELL,
+            likes=15,
+        ).create()
+
+        # Call the method under test
+        results = Recommendation.find_by_product_a_sku_and_type(
+            "SKU1", RecommendationType.UP_SELL
+        )
+
+        # Assert the results are as expected
+        self.assertEqual(len(results), 2)
+        self.assertTrue(
+            all(
+                rec.recommendation_type == RecommendationType.UP_SELL for rec in results
+            )
+        )
+        self.assertEqual(
+            results[0].product_b_sku, "SKU3"
+        )  # Assuming the first result is the most liked
+        self.assertEqual(results[1].product_b_sku, "SKU2")
+
 
 ######################################################################
 #  T E S T   E X C E P T I O N   H A N D L E R S
