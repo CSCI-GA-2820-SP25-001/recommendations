@@ -73,6 +73,10 @@ class Recommendation(db.Model):
         logger.info("Creating %s", self.name)
         self.id = None  # pylint: disable=invalid-name
         try:
+            if self.likes is not None and self.likes < 0:
+                # don't allow negative likes
+                raise DataValidationError("Likes cannot be negative: " + self.likes)
+
             db.session.add(self)
             db.session.commit()
         except Exception as e:
@@ -88,6 +92,10 @@ class Recommendation(db.Model):
         if not self.id:
             raise DataValidationError("Update called with empty ID field")
         try:
+            if self.likes is not None and self.likes < 0:
+                # don't allow negative likes
+                raise DataValidationError("Likes cannot be negative: " + self.likes)
+
             db.session.commit()
         except Exception as e:
             db.session.rollback()
@@ -133,8 +141,19 @@ class Recommendation(db.Model):
             self.recommendation_type = self._validate_enum(
                 data.get("recommendation_type"), RecommendationType
             )
+            if "likes" not in data or data["likes"] is None:
+                self.likes = 0
+                return self
 
-            self.likes = self._validate_likes(data.get("likes", 0))
+            likes = data["likes"]
+            if not isinstance(likes, int):
+                raise DataValidationError(
+                    "Invalid type for integer [likes]: " + str(type(likes))
+                )
+            if likes < 0:
+                raise DataValidationError("Likes cannot be negative: " + likes)
+            self.likes = likes
+
         except AttributeError as error:
             raise DataValidationError(f"Invalid attribute: {error.args[0]}") from error
         except KeyError as error:
@@ -147,6 +166,20 @@ class Recommendation(db.Model):
                 + str(error)
             ) from error
         return self
+
+    def add_like(self):
+        """Increments like counter by one"""
+        logger.info("Adding like for %s", self.name)
+        self.likes += 1
+        self.update()
+
+    def remove_like(self):
+        """Decrements like counter by one"""
+        logger.info("Decrementing like for %s", self.name)
+        if self.likes <= 0:
+            raise DataValidationError("Likes cannot be negative")
+        self.likes -= 1
+        self.update()
 
     ##################################################
     # CLASS METHODS
@@ -173,6 +206,57 @@ class Recommendation(db.Model):
         """
         logger.info("Processing name query for %s ...", name)
         return cls.query.filter(cls.name == name)
+
+    @classmethod
+    def find_by_product_a_sku(cls, sku):
+        """Returns all Recommendations with the given product a sku
+
+        Args:
+            sku (string): the sku of product A in the Recommendations you want to match
+        """
+        logger.info("Processing product a sku query for %s ...", sku)
+        return cls.query.filter(cls.product_a_sku == sku)
+
+    @classmethod
+    def find_by_product_b_sku(cls, sku):
+        """Returns all Recommendations with the given product b sku
+
+        Args:
+            sku (string): the sku of product B in the Recommendations you want to match
+        """
+        logger.info("Processing product b sku query for %s ...", sku)
+        return cls.query.filter(cls.product_b_sku == sku)
+
+    @classmethod
+    def find_by_type(cls, recommendation_type: RecommendationType) -> list:
+        """Returns all Recommendations by their Type
+
+        :param recommendation_type: RecommendationType
+        :recommendation_type available: enum
+
+        :return: a collection of Recommendations that are of requested type
+        :rtype: list
+
+        """
+        logger.info("Processing type query for %s ...", recommendation_type.name)
+        return cls.query.filter(cls.recommendation_type == recommendation_type)
+
+    @classmethod
+    def find_by_product_a_sku_and_type(cls, product_a_sku, recommendation_type):
+        """Find recommendations by product A SKU and type, ordered by likes."""
+        logger.info(
+            "Processing type query for %s and %s...",
+            product_a_sku,
+            recommendation_type.name,
+        )
+
+        return (
+            cls.query.filter_by(
+                product_a_sku=product_a_sku, recommendation_type=recommendation_type
+            )
+            .order_by(cls.likes.desc())
+            .all()
+        )
 
     @staticmethod
     def _validate_sku(value, field_name):

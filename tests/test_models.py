@@ -15,7 +15,7 @@
 ######################################################################
 
 """
-Test cases for Pet Model
+Test cases for Recommendations Model
 """
 
 # pylint: disable=duplicate-code
@@ -23,7 +23,6 @@ import os
 import logging
 from unittest import TestCase
 from unittest.mock import patch
-from datetime import date
 from wsgi import app
 from service.models import (
     Recommendation,
@@ -71,28 +70,14 @@ class TestCaseBase(TestCase):
 
 
 ######################################################################
-#  R E C O M M E N D A T I O N S  M O D E L   T E S T   C A S E S
+#  R E C O M M E N D A T I O N S   M O D E L   T E S T   C A S E S
 ######################################################################
-class TestPetModel(TestCaseBase):
+class TestRecommendationModel(TestCaseBase):
     """Recommendation Model CRUD Tests"""
 
     ######################################################################
     #  T E S T   C A S E S
     ######################################################################
-
-    # def test_create_recommendation(self):
-    #     """It should create a Recommendation"""
-    #     # Todo: Remove this test case example
-    #     recommendation = RecommendationFactory()
-    #     recommendation.create()
-    #     self.assertIsNotNone(recommendation.id)
-    #     found = Recommendation.all()
-    #     self.assertEqual(len(found), 1)
-    #     data = Recommendation.find(recommendation.id)
-    #     self.assertEqual(data.product_a_sku, recommendation.product_a_sku)
-    #     self.assertEqual(data.product_b_sku, recommendation.product_b_sku)
-    #     self.assertEqual(data.recommendation_type, recommendation.recommendation_type)
-    #     self.assertEqual(data.likes, recommendation.likes)
 
     def test_recommendation_type_values(self):
         """It should contain all desired types of recommendation"""
@@ -291,6 +276,90 @@ class TestPetModel(TestCaseBase):
         data["recommendation_type"] = "cross_sale"  # wrong case
         recommendation = Recommendation()
         self.assertRaises(DataValidationError, recommendation.deserialize, data)
+
+    def test_deserialize_bad_likes(self):
+        """It should not deserialize invalid likes attribute"""
+        # bad likes type
+        test_recommendation = RecommendationFactory()
+        data = test_recommendation.serialize()
+        data["likes"] = "1"  # should be integer
+        recommendation = Recommendation()
+        self.assertRaises(DataValidationError, recommendation.deserialize, data)
+
+        # negative likes
+        test_recommendation = RecommendationFactory()
+        data = test_recommendation.serialize()
+        data["likes"] = -2
+        recommendation = Recommendation()
+        self.assertRaises(DataValidationError, recommendation.deserialize, data)
+
+        # empty likes
+        test_recommendation = RecommendationFactory()
+        data = test_recommendation.serialize()
+        data["likes"] = None
+        recommendation = Recommendation()
+        deserialized_recommendation = recommendation.deserialize(data)
+        self.assertEqual(deserialized_recommendation.likes, 0)
+
+    def test_likes_default_initialization(self):
+        """It should initialize Recommendation with likes counter set to 0"""
+        recommendation = RecommendationFactory()
+        recommendation.create()
+        self.assertEqual(recommendation.likes, 0)
+
+        fetched_recommendation = Recommendation.find(recommendation.id)
+        self.assertEqual(fetched_recommendation.likes, 0)
+
+    def test_likes_initialization(self):
+        """It should initialize likes field to 2"""
+        recommendation = Recommendation(
+            product_a_sku="A1",
+            product_b_sku="B1",
+            recommendation_type=RecommendationType.UP_SELL,
+            likes=2,
+        )
+        recommendation.create()
+        self.assertTrue(recommendation.id is not None)
+        self.assertEqual(recommendation.likes, 2)
+
+        # likes counter cannot be negative
+        recommendation.likes = -2
+        self.assertRaises(DataValidationError, recommendation.update)
+
+        recommendation = Recommendation(
+            product_a_sku="A1",
+            product_b_sku="B1",
+            recommendation_type=RecommendationType.UP_SELL,
+            likes=-2,
+        )
+        self.assertRaises(DataValidationError, recommendation.create)
+
+    def test_add_like(self):
+        """It should increase like field by 1"""
+        recommendation = RecommendationFactory()
+        recommendation.create()
+        self.assertEqual(recommendation.likes, 0)
+
+        recommendation.add_like()
+        self.assertEqual(recommendation.likes, 1)
+
+        recommendation.add_like()
+        self.assertEqual(recommendation.likes, 2)
+
+    def test_remove_like(self):
+        """It should decrement like field by 1 and don't allow likes to become negative"""
+        recommendation = RecommendationFactory()
+        recommendation.likes = 2
+        recommendation.create()
+        self.assertEqual(recommendation.likes, 2)
+
+        recommendation.remove_like()
+        self.assertEqual(recommendation.likes, 1)
+
+        recommendation.remove_like()
+        self.assertEqual(recommendation.likes, 0)
+
+        self.assertRaises(DataValidationError, recommendation.remove_like)
 
 
 ######################################################################
