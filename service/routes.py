@@ -246,6 +246,7 @@ def check_content_type(content_type) -> None:
         f"Content-Type must be {content_type}",
     )
 
+
 ######################################################################
 # INCREMENT LIKES FIELD FOR A RECOMMENDATION
 ######################################################################
@@ -262,7 +263,7 @@ def increment_like(recommendation_id):
 
     recommendation = Recommendation.find(recommendation_id)
     if not recommendation:
-        error(
+        app.logger.error(
             status.HTTP_404_NOT_FOUND,
             f"Recommendation with id: '{recommendation_id}' was not found.",
         )
@@ -291,7 +292,7 @@ def decrement_like(recommendation_id):
 
     recommendation = Recommendation.find(recommendation_id)
     if not recommendation:
-        error(
+        app.logger.error(
             status.HTTP_404_NOT_FOUND,
             f"Recommendation with id: '{recommendation_id}' was not found.",
         )
