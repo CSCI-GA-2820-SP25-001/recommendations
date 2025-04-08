@@ -236,3 +236,60 @@ def check_content_type(content_type) -> None:
         status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
         f"Content-Type must be {content_type}",
     )
+
+######################################################################
+# INCREMENT LIKES FIELD FOR A RECOMMENDATION
+######################################################################
+@app.route("/recommendations/<int:recommendation_id>/like", methods=["PUT"])
+def increment_like(recommendation_id):
+    """
+    Increment likes for a Recommendation
+    This endpoint will increment the likes for the Recommendation with ID specified in URL
+    """
+    app.logger.info(
+        "Request to increment recommendation's likes field with id: %d",
+        recommendation_id,
+    )
+
+    recommendation = Recommendation.find(recommendation_id)
+    if not recommendation:
+        error(
+            status.HTTP_404_NOT_FOUND,
+            f"Recommendation with id: '{recommendation_id}' was not found.",
+        )
+
+    recommendation.add_like()
+
+    app.logger.info(
+        "Recommendation with ID: %d - likes field incremented.", recommendation.id
+    )
+    return jsonify(recommendation.serialize()), status.HTTP_200_OK
+
+
+######################################################################
+# DECREMENT LIKES FIELD FOR A RECOMMENDATION
+######################################################################
+@app.route("/recommendations/<int:recommendation_id>/like", methods=["DELETE"])
+def decrement_like(recommendation_id):
+    """
+    Decrement likes for a Recommendation
+    This endpoint will decrement the likes for the Recommendation with ID specified in URL
+    """
+    app.logger.info(
+        "Request to decrement recommendation's likes field with id: %d",
+        recommendation_id,
+    )
+
+    recommendation = Recommendation.find(recommendation_id)
+    if not recommendation:
+        error(
+            status.HTTP_404_NOT_FOUND,
+            f"Recommendation with id: '{recommendation_id}' was not found.",
+        )
+
+    recommendation.remove_like()
+
+    app.logger.info(
+        "Recommendation with ID: %d - likes field decremented.", recommendation.id
+    )
+    return jsonify(recommendation.serialize()), status.HTTP_200_OK
