@@ -275,3 +275,47 @@ class TestSadPaths(TestCase):
         """It should not Create a Recommendation with the wrong content type"""
         response = self.client.post(BASE_URL, data="hello", content_type="text/html")
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+ def test_increment_recommendation_likes(self):
+        """It should increment Recommendation's likes field by recommendation id"""
+        test_recommendation = self._create_recommendations(1)[0]
+
+        for _ in range(10):
+            response = self.client.put(f"{BASE_URL}/{test_recommendation.id}/like")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_recommendation = response.get_json()
+        self.assertEqual(updated_recommendation["likes"], 10)
+
+    def test_decrement_recommendation_likes_succeed(self):
+        """It should decrement Recommendation's likes field by recommendation id"""
+        test_recommendation = self._create_recommendations(1)[0]
+        response = self.client.put(f"{BASE_URL}/{test_recommendation.id}/like")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_recommendation = response.get_json()
+        self.assertEqual(updated_recommendation["likes"], 1)
+
+        response = self.client.delete(f"{BASE_URL}/{test_recommendation.id}/like")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        updated_recommendation = response.get_json()
+        self.assertEqual(updated_recommendation["likes"], 0)
+
+    ######################################################################
+    #  T E S T  S A D  P A T H
+    ######################################################################
+
+    def test_increment_recommendation_likes_notfound(self):
+        """It should increment Recommendation's likes field by recommendation id that doesn't exist"""
+        response = self.client.put(f"{BASE_URL}/10000/like")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_decrement_recommendation_likes_fail(self):
+        """It should decrement Recommendation's likes field by recommendation id that had likes less or equal to 0"""
+        test_recommendation = self._create_recommendations(1)[0]
+        response = self.client.delete(f"{BASE_URL}/{test_recommendation.id}/like")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_decrement_recommendation_likes_notfound(self):
+        """It should decrement Recommendation's likes field by recommendation id that doesn't exist"""
+        response = self.client.delete(f"{BASE_URL}/10000/like")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
