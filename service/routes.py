@@ -32,8 +32,8 @@ from service.common import status  # HTTP Status Codes
 ######################################################################
 @app.route("/health")
 def health():
-    """Health Status"""
-    return {"status": "OK"}, status.HTTP_200_OK
+    """Let them know our heart is still beating"""
+    return jsonify(status=200, message="Healthy"), status.HTTP_200_OK
 
 
 ######################################################################
@@ -42,25 +42,26 @@ def health():
 @app.route("/")
 def index():
     """Root URL response"""
-    app.logger.info("Request for Root URL")
-    return (
-        jsonify(
-            name="Recommendations REST API Service",
-            version="1.0",
-            paths=[
-                (
-                    {
-                        "path": str(rule),
-                        "methods": list(rule.methods),
-                        "description": globals()[rule.endpoint].__doc__,
-                    }
-                )
-                for rule in app.url_map.iter_rules()
-                if rule.endpoint != "static"
-            ],
-        ),
-        status.HTTP_200_OK,
-    )
+    # app.logger.info("Request for Root URL")
+    # return (
+    #     jsonify(
+    #         name="Recommendations REST API Service",
+    #         version="1.0",
+    #         paths=[
+    #             (
+    #                 {
+    #                     "path": str(rule),
+    #                     "methods": list(rule.methods),
+    #                     "description": globals()[rule.endpoint].__doc__,
+    #                 }
+    #             )
+    #             for rule in app.url_map.iter_rules()
+    #             if rule.endpoint != "static"
+    #         ],
+    #     ),
+    #     status.HTTP_200_OK,
+    # )
+    return app.send_static_file("index.html")
 
 
 ######################################################################
@@ -295,6 +296,10 @@ def decrement_like(recommendation_id):
         app.logger.error(
             status.HTTP_404_NOT_FOUND,
             f"Recommendation with id: '{recommendation_id}' was not found.",
+        )
+        return (
+            jsonify(error=f"Recommendation with id {recommendation_id} was not found"),
+            404,
         )
 
     recommendation.remove_like()
