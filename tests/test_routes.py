@@ -67,7 +67,7 @@ class TestRecommendationService(TestCase):
         db.session.remove()
 
     ############################################################
-    # Utility function to bulk create pets
+    # Utility function to bulk create recommendations
     ############################################################
     def _create_recommendations(self, count):
         """Factory method to create recommendations in bulk"""
@@ -90,29 +90,33 @@ class TestRecommendationService(TestCase):
     ######################################################################
 
     def test_health(self):
-        """It should get the health endpoint"""
+        """It should be healthy"""
         resp = self.client.get("/health")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(data["status"], "OK")
+        self.assertEqual(data["message"], "Healthy")
 
     def test_index(self):
         """It should call the home page"""
         resp = self.client.get("/")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
-        self.assertIn("name", resp.json)
-        self.assertIn("version", resp.json)
-        self.assertIn("paths", resp.json)
-        self.assertEqual(
-            len(list(resp.json["paths"])),
-            len(
-                list(
-                    filter(
-                        lambda rule: rule.endpoint != "static", app.url_map.iter_rules()
-                    )
-                )
-            ),
-        )
+
+        # self.assertIn("name", resp.json)
+        # self.assertIn("version", resp.json)
+        # self.assertIn("paths", resp.json)
+        # self.assertEqual(
+        #     len(list(resp.json["paths"])),
+        #     len(
+        #         list(
+        #             filter(
+        #                 lambda rule: rule.endpoint != "static", app.url_map.iter_rules()
+        #             )
+        #         )
+        #     ),
+        # )
+
+        self.assertIn(b"Recommendations Demo REST API Service", resp.data)
 
     # ----------------------------------------------------------
     # TEST LIST
@@ -380,7 +384,7 @@ class TestRecommendationService(TestCase):
         response = self.client.delete(f"{BASE_URL}/{test_recommendation.id}/like")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    # def test_decrement_recommendation_likes_notfound(self):
-    #     """It should decrement Recommendation's likes field by recommendation id that doesn't exist"""
-    #     response = self.client.delete(f"{BASE_URL}/10000/like")
-    #     self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    def test_decrement_recommendation_likes_notfound(self):
+        """It should decrement Recommendation's likes field by recommendation id that doesn't exist"""
+        response = self.client.delete(f"{BASE_URL}/10000/like")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

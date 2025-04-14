@@ -66,7 +66,7 @@ tests/                     - test cases package
 ### Example Object
 
 ```Python
-{'id': 1033, 'product_a_sku': 'uRfNZyNY', 'product_b_sku': 'svLLqnLF', 'type': 'ACCESSORY'}
+{'id': 1033, 'likes': 0, 'product_a_sku': 'uRfNZyNY', 'product_b_sku': 'svLLqnLF', 'type': 'ACCESSORY'}
 ```
 
 ### Testing
