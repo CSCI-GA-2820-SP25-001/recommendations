@@ -29,38 +29,33 @@ $(function () {
     }
 
     // ****************************************
-    // Create a Pet
+    // Create a recommendation
     // ****************************************
 
     $("#create-btn").click(function () {
 
-        let name = $("#pet_name").val();
-        let category = $("#pet_category").val();
-        let available = $("#pet_available").val() == "true";
-        let gender = $("#pet_gender").val();
-        let birthday = $("#pet_birthday").val();
+        let product_a_sku = $("#recommendation_product_a_sku").val();
+        let product_b_sku = $("#recommendation_product_b_sku").val();
+        let recommendation_type = $("#recommendation_recommendation_type").val();
 
         let data = {
-            "name": name,
-            "category": category,
-            "available": available,
-            "gender": gender,
-            "birthday": birthday
+            "product_a_sku": product_a_sku,
+            "product_b_sku": product_b_sku,
+            "recommendation_type": recommendation_type
         };
 
         $("#flash_message").empty();
         
         let ajax = $.ajax({
             type: "POST",
-            url: "/pets",
+            url: "/recommendations",
             contentType: "application/json",
             data: JSON.stringify(data),
         });
 
         ajax.done(function(res){
             update_form_data(res)
-            flash_message("Success")
-        });
+            flash_message("Successfully created a recommendation")        });
 
         ajax.fail(function(res){
             flash_message(res.responseJSON.message)
