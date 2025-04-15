@@ -253,3 +253,32 @@ $(function () {
     });
 
 })
+
+    // ****************************************
+    // Like a Recommendation
+    // ****************************************
+
+$("#like-btn").click(function () {
+    let recommendation_id = $("#recommendation_id").val();
+    if (!recommendation_id) {
+        flash_message("Please select a recommendation to like.");
+        return;
+    }
+
+    $("#flash_message").empty();
+
+    let ajax = $.ajax({
+        type: "PUT",
+        url: `/api/recommendations/${recommendation_id}/like`,
+        contentType: "application/json"
+    });
+
+    ajax.done(function (res) {
+        update_form_data(res);
+        flash_message("Successfully liked the recommendation!");
+    });
+
+    ajax.fail(function (res) {
+        flash_message(res.responseJSON.message);
+    });
+});
