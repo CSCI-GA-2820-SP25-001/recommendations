@@ -135,6 +135,55 @@ $(function () {
 
     });
 
+    // ****************************************
+    // List all Recommendations
+    // ****************************************
+
+    $("#list-btn").click(function () {
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "GET",
+            url: "/recommendations",
+            contentType: "application/json",
+            data: ''
+        })
+
+        ajax.done(function (res) {
+            $("#search_results").empty();
+            let table = '<table class="table table-striped" cellpadding="10">'
+            table += '<thead><tr>'
+            table += '<th class="col-md-2">Recommendation ID</th>'
+            table += '<th class="col-md-2">Product A SKU</th>'
+            table += '<th class="col-md-2">Product B SKU</th>'
+            table += '<th class="col-md-2">Recommendation type</th>'
+            table += '<th class="col-md-2">Likes</th>'
+            table += '</tr></thead><tbody>'
+            let firstRecommendation = "";
+            for (let i = 0; i < res.length; i++) {
+                let recommendation = res[i];
+                table += `<tr id="row_${i}"><td>${recommendation.id}</td><td>${recommendation.product_a_sku}</td><td>${recommendation.product_b_sku}</td><td>${recommendation.recommendation_type}</td><td>${recommendation.likes}</td></tr>`;
+                if (i == 0) {
+                    firstRecommendation = recommendation;
+                }
+            }
+            table += '</tbody></table>';
+            $("#search_results").append(table);
+
+            if (firstRecommendation != "") {
+                update_form_data(firstRecommendation)
+            }
+
+            flash_message("Success")
+        });
+
+        ajax.fail(function (res) {
+            flash_message(res.responseJSON.message)
+        });
+
+    });
+
+
  // ****************************************
     // Delete a Recommendation
     // ****************************************
