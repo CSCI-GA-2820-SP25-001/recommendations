@@ -117,7 +117,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "GET",
-            url: `/api/recommendations/${recommendation_id}`,
+            url: `/recommendations/${recommendation_id}`,
             contentType: "application/json",
             data: ''
         })
@@ -184,7 +184,7 @@ $(function () {
     });
 
 
- // ****************************************
+    // ****************************************
     // Delete a Recommendation
     // ****************************************
 
@@ -201,7 +201,7 @@ $(function () {
 
         let ajax = $.ajax({
             type: "DELETE",
-            url: `/api/recommendations/${recommendation_id}`,
+            url: `/recommendations/${recommendation_id}`,
             contentType: "application/json",
             data: '',
         })
@@ -294,32 +294,33 @@ $(function () {
 
     });
 
-})
     // ****************************************
     // Like a Recommendation
     // ****************************************
 
-$("#like-btn").click(function () {
-    let recommendation_id = $("#recommendation_id").val();
-    if (!recommendation_id) {
-        flash_message("Please select a recommendation to like.");
-        return;
-    }
+    $("#like-btn").click(function () {
+        let recommendation_id = $("#recommendation_id").val();
+        if (!recommendation_id) {
+            flash_message("Please select a recommendation to like.");
+            return;
+        }
 
-    $("#flash_message").empty();
+        $("#flash_message").empty();
 
-    let ajax = $.ajax({
-        type: "PUT",
-        url: `/api/recommendations/${recommendation_id}/like`,
-        contentType: "application/json"
+        let ajax = $.ajax({
+            type: "PUT",
+            url: `/recommendations/${recommendation_id}/like`,
+            contentType: "application/json"
+        });
+
+        ajax.done(function (res) {
+            update_form_data(res);
+            flash_message("Successfully liked the recommendation!");
+        });
+
+        ajax.fail(function (res) {
+            flash_message(res.responseJSON.message);
+        });
     });
 
-    ajax.done(function (res) {
-        update_form_data(res);
-        flash_message("Successfully liked the recommendation!");
-    });
-
-    ajax.fail(function (res) {
-        flash_message(res.responseJSON.message);
-    });
-});
+})
