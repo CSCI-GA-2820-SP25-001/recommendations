@@ -324,3 +324,31 @@ $(function () {
     });
 
 })
+    // ****************************************
+    // Dislike a Recommendation
+    // ****************************************
+
+    $("#dislike-btn").click(function () {
+        let recommendation_id = $("#recommendation_id").val();
+        if (!recommendation_id) {
+            flash_message("Please select a recommendation to dislike.");
+            return;
+        }
+
+        $("#flash_message").empty();
+
+        let ajax = $.ajax({
+            type: "DELETE",
+            url: `/recommendations/${recommendation_id}/like`,
+            contentType: "application/json"
+        });
+
+        ajax.done(function (res) {
+            update_form_data(res);
+            flash_message("Successfully disliked the recommendation!");
+        });
+
+        ajax.fail(function (res) {
+            flash_message(res.responseJSON.message);
+        });
+    });
