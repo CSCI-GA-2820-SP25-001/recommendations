@@ -221,7 +221,7 @@ $(function () {
     // ****************************************
 
     $("#clear-btn").click(function () {
-        $("#pet_id").val("");
+        $("#recommendation_id").val("");
         $("#flash_message").empty();
         clear_form_data()
     });
@@ -323,7 +323,6 @@ $(function () {
         });
     });
 
-})
     // ****************************************
     // Dislike a Recommendation
     // ****************************************
@@ -352,3 +351,6 @@ $(function () {
             flash_message(res.responseJSON.message);
         });
     });
+
+})
+    
