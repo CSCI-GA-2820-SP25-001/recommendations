@@ -86,6 +86,9 @@ Use the following command to run on Local Host:
 make run
 ```
 
+#openshift
+change
+
 ## License
 
 Copyright (c) 2016, 2025 [John Rofrano](https://www.linkedin.com/in/JohnRofrano/). All rights reserved.
