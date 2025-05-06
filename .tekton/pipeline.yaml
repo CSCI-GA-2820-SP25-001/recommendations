@@ -1,25 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
-  creationTimestamp: '2025-05-06T16:14:55Z'
-  generation: 4
-  managedFields:
-    - apiVersion: tekton.dev/v1
-      fieldsType: FieldsV1
-      fieldsV1:
-        'f:spec':
-          .: {}
-          'f:finally': {}
-          'f:params': {}
-          'f:tasks': {}
-          'f:workspaces': {}
-      manager: Mozilla
-      operation: Update
-      time: '2025-05-06T16:59:50Z'
   name: cd-pipeline
-  namespace: theamangupta20-dev
-  resourceVersion: '1709282568'
-  uid: 28987735-df11-4bd3-bc0e-cacecbb0515e
 spec:
   params:
     - description: The URL to the git repo
