@@ -19,6 +19,10 @@ spec:
       description: The name of the image to build
       name: IMAGE_NAME
       type: string
+    - default: 'https://recommendations-theamangupta20-dev.apps.rm3.7wse.p1.openshiftapps.com/'
+      description: The root url to recommendations microservice
+      name: BASE_URL
+      type: string
   tasks:
     - name: git-clone
       params:
@@ -139,6 +143,22 @@ spec:
       taskRef:
         kind: Task
         name: deploy-image
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+    - name: behave
+      params:
+        - name: base-url
+          value: $(params.BASE_URL)
+        - name: wait-seconds
+          value: '60'
+        - name: driver
+          value: chrome
+      runAfter:
+        - deploy-image
+      taskRef:
+        kind: Task
+        name: behave
       workspaces:
         - name: source
           workspace: pipeline-workspace
